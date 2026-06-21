@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { useStore } from '@/lib/store';
 import { CATEGORIES, MediaType } from '@/lib/gallery';
 
+const ADMIN_PASSWORD = 'studio2026';
+
 const TYPES: { value: MediaType; label: string; icon: string }[] = [
   { value: 'photo', label: 'Фото', icon: 'Image' },
   { value: 'video', label: 'Видео', icon: 'Video' },
@@ -17,11 +19,24 @@ const TYPES: { value: MediaType; label: string; icon: string }[] = [
 const Admin = () => {
   const { addMedia, media } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [unlocked, setUnlocked] = useState(false);
+  const [pwd, setPwd] = useState('');
+  const [pwdError, setPwdError] = useState(false);
   const [preview, setPreview] = useState('');
   const [title, setTitle] = useState('');
   const [type, setType] = useState<MediaType>('photo');
   const [category, setCategory] = useState('Природа');
   const [muted, setMuted] = useState(true);
+
+  const checkPassword = () => {
+    if (pwd === ADMIN_PASSWORD) {
+      setUnlocked(true);
+      setPwdError(false);
+    } else {
+      setPwdError(true);
+      setPwd('');
+    }
+  };
 
   const onFile = (f?: File) => {
     if (!f) return;
@@ -43,15 +58,67 @@ const Admin = () => {
     if (fileRef.current) fileRef.current.value = '';
   };
 
+  if (!unlocked) {
+    return (
+      <div className="min-h-screen grain">
+        <Nav />
+        <div className="container flex flex-col items-center justify-center min-h-[80vh]">
+          <div className="w-full max-w-sm animate-fade-up">
+            <div className="mb-8 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-border mb-5">
+                <Icon name="Lock" size={24} className="text-muted-foreground" />
+              </div>
+              <h1 className="font-display text-4xl">Доступ закрыт</h1>
+              <p className="mt-2 text-sm text-muted-foreground">Введите пароль для входа в панель</p>
+            </div>
+
+            <div className="space-y-3">
+              <Input
+                type="password"
+                value={pwd}
+                onChange={(e) => { setPwd(e.target.value); setPwdError(false); }}
+                onKeyDown={(e) => e.key === 'Enter' && checkPassword()}
+                placeholder="Пароль"
+                className={`h-12 rounded-xl text-center tracking-widest ${pwdError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+              />
+              {pwdError && (
+                <p className="text-xs text-destructive text-center animate-fade-up">
+                  Неверный пароль
+                </p>
+              )}
+              <button
+                onClick={checkPassword}
+                className="w-full py-3.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Войти
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen grain">
       <Nav />
 
       <div className="container pt-16 pb-24 max-w-5xl">
-        <h1 className="font-display text-5xl md:text-7xl animate-fade-up">Админ-панель</h1>
-        <p className="text-muted-foreground mt-3 animate-fade-up" style={{ animationDelay: '60ms' }}>
-          Загрузите фото, видео или гифку — они появятся в галерее.
-        </p>
+        <div className="flex items-center justify-between animate-fade-up">
+          <div>
+            <h1 className="font-display text-5xl md:text-7xl">Админ-панель</h1>
+            <p className="text-muted-foreground mt-3">
+              Загрузите фото, видео или гифку — они появятся в галерее.
+            </p>
+          </div>
+          <button
+            onClick={() => setUnlocked(false)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Icon name="LogOut" size={16} />
+            Выйти
+          </button>
+        </div>
 
         <div className="mt-12 grid md:grid-cols-2 gap-8">
           <div

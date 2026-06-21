@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const links = [
   { to: '/', label: 'Главная' },
@@ -7,6 +7,7 @@ const links = [
 ];
 
 const Nav = () => {
+  const { pathname } = useLocation();
   return (
     <header className="sticky top-0 z-50 backdrop-blur-md bg-background/70 border-b border-border">
       <div className="container flex items-center justify-between h-16">
@@ -18,7 +19,11 @@ const Nav = () => {
             <Link
               key={l.to}
               to={l.to}
-              className="px-4 py-2 text-sm rounded-full transition-colors text-muted-foreground hover:text-foreground"
+              className={`px-4 py-2 text-sm rounded-full transition-all ${
+                pathname === l.to
+                  ? 'text-foreground font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
               {l.label}
             </Link>
