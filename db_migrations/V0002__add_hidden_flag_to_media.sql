@@ -1,0 +1,1 @@
+ALTER TABLE t_p37606192_minimal_viewer_proje.media ADD COLUMN hidden BOOLEAN NOT NULL DEFAULT FALSE;

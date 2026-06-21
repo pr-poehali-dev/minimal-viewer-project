@@ -4,7 +4,7 @@ import Icon from '@/components/ui/icon';
 import { useStore } from '@/lib/store';
 
 const Index = () => {
-  const { media } = useStore();
+  const { media, loading } = useStore();
 
   return (
     <div className="min-h-screen grain">
@@ -28,25 +28,29 @@ const Index = () => {
 
       <section className="container pb-32">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {media.slice(0, 3).map((m, i) => (
-            <Link
-              key={m.id}
-              to="/gallery"
-              className="group relative aspect-[3/4] rounded-2xl overflow-hidden hover-lift animate-scale-in"
-              style={{ animationDelay: `${i * 100}ms` }}
-            >
-              <img
-                src={m.url}
-                alt={m.title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-              <div className="absolute bottom-5 left-5 text-white">
-                <h3 className="font-display text-3xl">{m.title}</h3>
-                <p className="text-sm opacity-80">{m.category}</p>
-              </div>
-            </Link>
-          ))}
+          {loading
+            ? [1, 2, 3].map((i) => (
+                <div key={i} className="aspect-[3/4] rounded-2xl bg-secondary animate-pulse" />
+              ))
+            : media.slice(0, 3).map((m, i) => (
+                <Link
+                  key={m.id}
+                  to="/gallery"
+                  className="group relative aspect-[3/4] rounded-2xl overflow-hidden hover-lift animate-scale-in"
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
+                  <img
+                    src={m.url}
+                    alt={m.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <div className="absolute bottom-5 left-5 text-white">
+                    <h3 className="font-display text-3xl">{m.title}</h3>
+                    <p className="text-sm opacity-80">{m.category}</p>
+                  </div>
+                </Link>
+              ))}
         </div>
       </section>
 

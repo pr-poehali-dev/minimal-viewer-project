@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import Nav from '@/components/Nav';
 import MediaCard from '@/components/MediaCard';
 import Icon from '@/components/ui/icon';
@@ -7,7 +8,7 @@ import { useStore } from '@/lib/store';
 import { CATEGORIES } from '@/lib/gallery';
 
 const Gallery = () => {
-  const { media } = useStore();
+  const { media, loading } = useStore();
   const [query, setQuery] = useState('');
   const [cat, setCat] = useState('Все');
 
@@ -31,6 +32,16 @@ const Gallery = () => {
       <Nav />
 
       <div className="container pt-16 pb-10">
+        <div className="flex items-center gap-4 mb-6 animate-fade-up">
+          <Link
+            to="/"
+            className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-foreground text-background text-sm font-medium hover:gap-3 transition-all"
+          >
+            <Icon name="ArrowLeft" size={16} className="transition-transform group-hover:-translate-x-1" />
+            Главная
+          </Link>
+        </div>
+
         <h1 className="font-display text-5xl md:text-7xl animate-fade-up">Галерея</h1>
 
         <div className="mt-8 flex flex-col md:flex-row md:items-center gap-4 animate-fade-up" style={{ animationDelay: '80ms' }}>
@@ -66,7 +77,17 @@ const Gallery = () => {
       </div>
 
       <div className="container pb-24">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="break-inside-avoid mb-6 rounded-2xl bg-secondary animate-pulse"
+                style={{ height: `${200 + (i % 3) * 80}px` }}
+              />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-32 text-muted-foreground animate-fade-up">
             <Icon name="ImageOff" size={40} className="mx-auto mb-4 opacity-50" />
             Ничего не найдено
