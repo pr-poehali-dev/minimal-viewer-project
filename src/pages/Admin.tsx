@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useStore } from '@/lib/store';
-import { CATEGORIES, MediaType } from '@/lib/gallery';
+import { CATEGORIES, MediaType, MediaItem } from '@/lib/gallery';
 
 const ADMIN_PASSWORD = 'studio2026';
 
@@ -16,8 +16,87 @@ const TYPES: { value: MediaType; label: string; icon: string }[] = [
   { value: 'gif', label: 'GIF', icon: 'Film' },
 ];
 
+const EditModal = ({ item, onClose }: { item: MediaItem; onClose: () => void }) => {
+  const { updateMedia } = useStore();
+  const [title, setTitle] = useState(item.title);
+  const [category, setCategory] = useState(item.category);
+  const [muted, setMuted] = useState(item.muted ?? true);
+
+  const save = () => {
+    updateMedia(item.id, { title: title.trim(), category, muted });
+    toast.success('Изменения сохранены');
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm mx-4 animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-display text-2xl">Редактировать</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <Icon name="X" size={20} />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm">Название</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="mt-2 h-11 rounded-xl"
+            />
+          </div>
+
+          <div>
+            <Label className="text-sm">Категория</Label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {CATEGORIES.filter((c) => c !== 'Все').map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCategory(c)}
+                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                    category === c
+                      ? 'bg-foreground text-background border-foreground'
+                      : 'border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {item.type === 'video' && (
+            <div className="flex items-center justify-between rounded-xl border border-border p-4">
+              <div className="flex items-center gap-2">
+                <Icon name={muted ? 'VolumeX' : 'Volume2'} size={18} />
+                <span className="text-sm">Без звука</span>
+              </div>
+              <Switch checked={muted} onCheckedChange={setMuted} />
+            </div>
+          )}
+
+          <button
+            onClick={save}
+            className="w-full py-3 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            Сохранить
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Admin = () => {
-  const { addMedia, media } = useStore();
+  const { addMedia, deleteMedia, media } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const [unlocked, setUnlocked] = useState(false);
   const [pwd, setPwd] = useState('');
@@ -27,6 +106,8 @@ const Admin = () => {
   const [type, setType] = useState<MediaType>('photo');
   const [category, setCategory] = useState('Природа');
   const [muted, setMuted] = useState(true);
+  const [editItem, setEditItem] = useState<MediaItem | null>(null);
+  const [tab, setTab] = useState<'upload' | 'manage'>('upload');
 
   const checkPassword = () => {
     if (pwd === ADMIN_PASSWORD) {
@@ -58,6 +139,13 @@ const Admin = () => {
     if (fileRef.current) fileRef.current.value = '';
   };
 
+  const confirmDelete = (id: string, name: string) => {
+    if (window.confirm(`Удалить «${name}»?`)) {
+      deleteMedia(id);
+      toast.success('Удалено');
+    }
+  };
+
   if (!unlocked) {
     return (
       <div className="min-h-screen grain">
@@ -71,7 +159,6 @@ const Admin = () => {
               <h1 className="font-display text-4xl">Доступ закрыт</h1>
               <p className="mt-2 text-sm text-muted-foreground">Введите пароль для входа в панель</p>
             </div>
-
             <div className="space-y-3">
               <Input
                 type="password"
@@ -82,9 +169,7 @@ const Admin = () => {
                 className={`h-12 rounded-xl text-center tracking-widest ${pwdError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
               />
               {pwdError && (
-                <p className="text-xs text-destructive text-center animate-fade-up">
-                  Неверный пароль
-                </p>
+                <p className="text-xs text-destructive text-center animate-fade-up">Неверный пароль</p>
               )}
               <button
                 onClick={checkPassword}
@@ -102,123 +187,169 @@ const Admin = () => {
   return (
     <div className="min-h-screen grain">
       <Nav />
+      {editItem && <EditModal item={editItem} onClose={() => setEditItem(null)} />}
 
       <div className="container pt-16 pb-24 max-w-5xl">
-        <div className="flex items-center justify-between animate-fade-up">
-          <div>
-            <h1 className="font-display text-5xl md:text-7xl">Админ-панель</h1>
-            <p className="text-muted-foreground mt-3">
-              Загрузите фото, видео или гифку — они появятся в галерее.
-            </p>
-          </div>
+        <h1 className="font-display text-5xl md:text-7xl animate-fade-up">Админ-панель</h1>
+
+        <div className="mt-8 flex gap-1 p-1 bg-secondary rounded-full w-fit animate-fade-up">
           <button
-            onClick={() => setUnlocked(false)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => setTab('upload')}
+            className={`px-5 py-2 rounded-full text-sm transition-colors ${tab === 'upload' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            <Icon name="LogOut" size={16} />
-            Выйти
+            Загрузить
+          </button>
+          <button
+            onClick={() => setTab('manage')}
+            className={`px-5 py-2 rounded-full text-sm transition-colors ${tab === 'manage' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Управление ({media.length})
           </button>
         </div>
 
-        <div className="mt-12 grid md:grid-cols-2 gap-8">
-          <div
-            onClick={() => fileRef.current?.click()}
-            className="animate-fade-up cursor-pointer aspect-square rounded-2xl border-2 border-dashed border-border hover:border-accent transition-colors flex items-center justify-center overflow-hidden bg-card"
-          >
-            {preview ? (
-              type === 'video' ? (
-                <video src={preview} muted loop autoPlay playsInline className="w-full h-full object-cover" />
+        {tab === 'upload' && (
+          <div className="mt-10 grid md:grid-cols-2 gap-8 animate-fade-up">
+            <div
+              onClick={() => fileRef.current?.click()}
+              className="cursor-pointer aspect-square rounded-2xl border-2 border-dashed border-border hover:border-accent transition-colors flex items-center justify-center overflow-hidden bg-card"
+            >
+              {preview ? (
+                type === 'video' ? (
+                  <video src={preview} muted loop autoPlay playsInline className="w-full h-full object-cover" />
+                ) : (
+                  <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                )
               ) : (
-                <img src={preview} alt="preview" className="w-full h-full object-cover" />
-              )
-            ) : (
-              <div className="text-center text-muted-foreground">
-                <Icon name="ImagePlus" size={40} className="mx-auto mb-3" />
-                <p className="text-sm">Нажмите, чтобы выбрать файл</p>
-              </div>
-            )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*,video/*"
-              className="hidden"
-              onChange={(e) => onFile(e.target.files?.[0])}
-            />
-          </div>
-
-          <div className="space-y-6 animate-fade-up" style={{ animationDelay: '100ms' }}>
-            <div>
-              <Label className="text-sm">Название</Label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Например, «Закат»"
-                className="mt-2 h-11 rounded-xl"
+                <div className="text-center text-muted-foreground">
+                  <Icon name="ImagePlus" size={40} className="mx-auto mb-3" />
+                  <p className="text-sm">Нажмите, чтобы выбрать файл</p>
+                </div>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*,video/*"
+                className="hidden"
+                onChange={(e) => onFile(e.target.files?.[0])}
               />
             </div>
 
-            <div>
-              <Label className="text-sm">Тип медиа</Label>
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {TYPES.map((t) => (
-                  <button
-                    key={t.value}
-                    onClick={() => setType(t.value)}
-                    className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-colors ${
-                      type === t.value
-                        ? 'border-accent bg-accent/10 text-accent'
-                        : 'border-border text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <Icon name={t.icon} size={20} />
-                    <span className="text-xs">{t.label}</span>
-                  </button>
-                ))}
+            <div className="space-y-6">
+              <div>
+                <Label className="text-sm">Название</Label>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Например, «Закат»"
+                  className="mt-2 h-11 rounded-xl"
+                />
               </div>
-            </div>
 
-            <div>
-              <Label className="text-sm">Категория</Label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {CATEGORIES.filter((c) => c !== 'Все').map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setCategory(c)}
-                    className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
-                      category === c
-                        ? 'bg-foreground text-background border-foreground'
-                        : 'border-border text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {type === 'video' && (
-              <div className="flex items-center justify-between rounded-xl border border-border p-4">
-                <div className="flex items-center gap-2">
-                  <Icon name={muted ? 'VolumeX' : 'Volume2'} size={18} />
-                  <span className="text-sm">Без звука</span>
+              <div>
+                <Label className="text-sm">Тип медиа</Label>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {TYPES.map((t) => (
+                    <button
+                      key={t.value}
+                      onClick={() => setType(t.value)}
+                      className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-colors ${
+                        type === t.value
+                          ? 'border-accent bg-accent/10 text-accent'
+                          : 'border-border text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Icon name={t.icon} size={20} />
+                      <span className="text-xs">{t.label}</span>
+                    </button>
+                  ))}
                 </div>
-                <Switch checked={muted} onCheckedChange={setMuted} />
               </div>
-            )}
 
-            <button
-              onClick={publish}
-              className="w-full py-3.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-            >
-              <Icon name="Send" size={16} />
-              Опубликовать
-            </button>
+              <div>
+                <Label className="text-sm">Категория</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {CATEGORIES.filter((c) => c !== 'Все').map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setCategory(c)}
+                      className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                        category === c
+                          ? 'bg-foreground text-background border-foreground'
+                          : 'border-border text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {type === 'video' && (
+                <div className="flex items-center justify-between rounded-xl border border-border p-4">
+                  <div className="flex items-center gap-2">
+                    <Icon name={muted ? 'VolumeX' : 'Volume2'} size={18} />
+                    <span className="text-sm">Без звука</span>
+                  </div>
+                  <Switch checked={muted} onCheckedChange={setMuted} />
+                </div>
+              )}
+
+              <button
+                onClick={publish}
+                className="w-full py-3.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <Icon name="Send" size={16} />
+                Опубликовать
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        <p className="mt-12 text-sm text-muted-foreground">
-          Всего в галерее: {media.length}
-        </p>
+        {tab === 'manage' && (
+          <div className="mt-10 space-y-3 animate-fade-up">
+            {media.length === 0 && (
+              <p className="text-muted-foreground text-sm py-10 text-center">Нет опубликованных материалов</p>
+            )}
+            {media.map((m) => (
+              <div
+                key={m.id}
+                className="flex items-center gap-4 p-4 rounded-2xl border border-border bg-card hover:border-muted-foreground/30 transition-colors"
+              >
+                <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-secondary">
+                  {m.type === 'video' ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Icon name="Video" size={20} className="text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <img src={m.url} alt={m.title} className="w-full h-full object-cover" />
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{m.title}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {m.category} · {m.type === 'photo' ? 'Фото' : m.type === 'video' ? 'Видео' : 'GIF'} · ❤️ {m.likes}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setEditItem(m)}
+                    className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+                  >
+                    <Icon name="Pencil" size={15} />
+                  </button>
+                  <button
+                    onClick={() => confirmDelete(m.id, m.title)}
+                    className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-destructive hover:border-destructive transition-colors"
+                  >
+                    <Icon name="Trash2" size={15} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

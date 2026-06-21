@@ -4,6 +4,8 @@ import { MediaItem, initialMedia } from './gallery';
 interface Store {
   media: MediaItem[];
   addMedia: (m: Omit<MediaItem, 'id' | 'likes' | 'comments' | 'liked'>) => void;
+  updateMedia: (id: string, patch: Partial<Pick<MediaItem, 'title' | 'category' | 'muted'>>) => void;
+  deleteMedia: (id: string) => void;
   toggleLike: (id: string) => void;
   addComment: (id: string, author: string, text: string) => void;
 }
@@ -19,6 +21,12 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       ...prev,
     ]);
 
+  const updateMedia: Store['updateMedia'] = (id, patch) =>
+    setMedia((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+
+  const deleteMedia: Store['deleteMedia'] = (id) =>
+    setMedia((prev) => prev.filter((x) => x.id !== id));
+
   const toggleLike: Store['toggleLike'] = (id) =>
     setMedia((prev) =>
       prev.map((x) =>
@@ -32,19 +40,13 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     setMedia((prev) =>
       prev.map((x) =>
         x.id === id
-          ? {
-              ...x,
-              comments: [
-                ...x.comments,
-                { id: Date.now().toString(), author, text },
-              ],
-            }
+          ? { ...x, comments: [...x.comments, { id: Date.now().toString(), author, text }] }
           : x
       )
     );
 
   return (
-    <Ctx.Provider value={{ media, addMedia, toggleLike, addComment }}>
+    <Ctx.Provider value={{ media, addMedia, updateMedia, deleteMedia, toggleLike, addComment }}>
       {children}
     </Ctx.Provider>
   );
