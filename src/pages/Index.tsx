@@ -11,34 +11,19 @@ const Index = () => {
       <Nav />
 
       <section className="container pt-24 pb-32 md:pt-36 md:pb-40">
-        <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground animate-fade-up">
-          Минималистичная галерея
-        </p>
-        <h1 className="font-display text-6xl md:text-8xl lg:text-9xl leading-[0.9] mt-6 max-w-5xl animate-fade-up" style={{ animationDelay: '80ms' }}>
-          Пространство,
-          <br />
-          где живёт <span className="italic text-accent">тишина</span>
-        </h1>
-        <p className="mt-8 text-lg text-muted-foreground max-w-xl animate-fade-up" style={{ animationDelay: '160ms' }}>
-          Фотографии, видео и гифки — собранные с любовью к деталям. Лайкайте,
-          комментируйте, находите своё.
-        </p>
-        <div className="mt-10 flex items-center gap-4 animate-fade-up" style={{ animationDelay: '240ms' }}>
+        <div className="flex items-center gap-4 animate-fade-up">
           <Link
             to="/gallery"
             className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-foreground text-background text-sm font-medium hover:gap-3 transition-all"
           >
-            Смотреть галерею
-            <Icon name="ArrowRight" size={16} className="transition-transform group-hover:translate-x-1" />
-          </Link>
-          <Link
-            to="/admin"
-            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-border text-sm font-medium hover:bg-secondary transition-colors"
-          >
-            <Icon name="Upload" size={16} />
-            Загрузить
+            <Icon name="ArrowLeft" size={16} className="transition-transform group-hover:-translate-x-1" />
+            Галерея
           </Link>
         </div>
+        <p className="mt-8 text-lg text-muted-foreground max-w-xl animate-fade-up" style={{ animationDelay: '80ms' }}>
+          Фотографии, видео и гифки — собранные с любовью к деталям. Лайкайте,
+          комментируйте, находите своё.
+        </p>
       </section>
 
       <section className="container pb-32">
@@ -67,7 +52,7 @@ const Index = () => {
 
       <footer className="border-t border-border">
         <div className="container py-10 flex items-center justify-between text-sm text-muted-foreground">
-          <span className="font-display text-xl text-foreground">Tihaya</span>
+          <span className="font-display text-xl text-foreground">Studio.m</span>
           <span>© 2026 — сделано с заботой</span>
         </div>
       </footer>
